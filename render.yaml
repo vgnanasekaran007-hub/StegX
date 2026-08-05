@@ -3,7 +3,9 @@ services:
     name: stegx-backend
     env: python
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python backend/main.py"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PORT
         value: 10000
+      - key: CORS_ORIGINS
+        value: "*"

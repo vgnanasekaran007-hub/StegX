@@ -3,6 +3,7 @@ StegX 3D Universal Steganography Studio — Backend API
 FastAPI application entry point.
 """
 import os
+import sys
 import asyncio
 import time
 from contextlib import asynccontextmanager
@@ -10,6 +11,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+
+# Ensure backend directory is in sys.path for Render / Uvicorn module resolution
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 from config import CORS_ORIGINS, UPLOAD_DIR, OUTPUT_DIR, FILE_MAX_AGE
 import database
@@ -22,13 +28,11 @@ async def lifespan(app: FastAPI):
     # Startup
     await database.init_db()
     print("✦ StegX Database initialized")
-    print("✦ StegX API ready at http://localhost:8000")
-    print("✦ Docs at http://localhost:8000/docs")
+    print("✦ StegX API ready")
     yield
     # Shutdown — cleanup temp files
     _cleanup_old_files(UPLOAD_DIR)
     _cleanup_old_files(OUTPUT_DIR)
-    print("✦ StegX shutdown — temporary files cleaned")
 
 
 def _cleanup_old_files(directory: str, max_age: int = FILE_MAX_AGE):
@@ -53,10 +57,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS middleware (allows wildcard or configured origins for Render/Vercel frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=CORS_ORIGINS if isinstance(CORS_ORIGINS, list) else [CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,6 +80,7 @@ app.include_router(history.router)
 
 
 @app.get("/api/health")
+@app.get("/health")
 async def health_check():
     """API health check."""
     return {
@@ -94,4 +99,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
