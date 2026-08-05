@@ -1,0 +1,97 @@
+"""
+StegX 3D Universal Steganography Studio — Backend API
+FastAPI application entry point.
+"""
+import os
+import asyncio
+import time
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+from config import CORS_ORIGINS, UPLOAD_DIR, OUTPUT_DIR, FILE_MAX_AGE
+import database
+from routes import upload, hide, extract, encrypt, analysis, history
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events."""
+    # Startup
+    await database.init_db()
+    print("✦ StegX Database initialized")
+    print("✦ StegX API ready at http://localhost:8000")
+    print("✦ Docs at http://localhost:8000/docs")
+    yield
+    # Shutdown — cleanup temp files
+    _cleanup_old_files(UPLOAD_DIR)
+    _cleanup_old_files(OUTPUT_DIR)
+    print("✦ StegX shutdown — temporary files cleaned")
+
+
+def _cleanup_old_files(directory: str, max_age: int = FILE_MAX_AGE):
+    """Remove files older than max_age seconds."""
+    now = time.time()
+    try:
+        for filename in os.listdir(directory):
+            filepath = os.path.join(directory, filename)
+            if os.path.isfile(filepath):
+                age = now - os.path.getmtime(filepath)
+                if age > max_age:
+                    os.remove(filepath)
+    except Exception:
+        pass
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="StegX 3D Universal Steganography Studio",
+    description="AI-powered steganography API supporting image, audio, video, and text steganography with encryption and analysis.",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static directories
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+app.mount("/outputs", StaticFiles(directory=str(OUTPUT_DIR)), name="outputs")
+
+# Include route modules
+app.include_router(upload.router)
+app.include_router(hide.router)
+app.include_router(extract.router)
+app.include_router(encrypt.router)
+app.include_router(analysis.router)
+app.include_router(history.router)
+
+
+@app.get("/api/health")
+async def health_check():
+    """API health check."""
+    return {
+        "status": "online",
+        "service": "StegX",
+        "version": "1.0.0",
+        "engines": {
+            "image": ["lsb", "dct", "dwt", "hybrid"],
+            "audio": ["lsb", "phase_coding", "echo_hiding", "spread_spectrum"],
+            "video": ["lsb", "dct", "dwt", "motion_vector", "hybrid"],
+            "text": ["whitespace", "unicode", "zero_width", "char_encoding", "synonym"],
+        },
+        "encryption": ["aes-128", "aes-192", "aes-256", "rsa", "ecc", "chacha20", "blowfish"],
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

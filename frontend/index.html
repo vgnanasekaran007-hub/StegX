@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="StegX 3D Universal Steganography Studio — AI-powered steganography with image, audio, video, and text support. Hide and extract data with advanced encryption and 3D visualization.">
+  <meta name="keywords" content="steganography, encryption, image steganography, audio steganography, video steganography, LSB, DCT, DWT, AES, 3D visualization">
+  <meta name="author" content="StegX">
+  <meta name="theme-color" content="#050816">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/index.css">
+</head>
+<body>
+  <!-- Three.js Canvas Background -->
+  <canvas id="three-canvas"></canvas>
+
+  <!-- App Shell -->
+  <div id="app">
+    <!-- Top Navigation -->
+    <nav id="navbar"></nav>
+
+    <!-- Main Layout -->
+    <div id="layout">
+      <!-- Sidebar -->
+      <aside id="sidebar"></aside>
+
+      <!-- Main Content -->
+      <main id="content">
+        <div id="page-container"></div>
+      </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-overlay" class="hidden"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
