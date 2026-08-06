@@ -57,18 +57,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware (allows wildcard or configured origins for Render/Vercel frontend)
+# CORS middleware
+# Note: allow_credentials cannot be True when allow_origins is ["*"] per CORS spec.
+_use_credentials = "*" not in CORS_ORIGINS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS if isinstance(CORS_ORIGINS, list) else [CORS_ORIGINS],
-    allow_credentials=True,
+    allow_credentials=_use_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount static directories
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-app.mount("/outputs", StaticFiles(directory=str(OUTPUT_DIR)), name="outputs")
+# Mount static directories (guard existence for fresh Render deploys)
+_upload_dir = str(UPLOAD_DIR)
+_output_dir = str(OUTPUT_DIR)
+os.makedirs(_upload_dir, exist_ok=True)
+os.makedirs(_output_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=_upload_dir), name="uploads")
+app.mount("/outputs", StaticFiles(directory=_output_dir), name="outputs")
 
 # Include route modules
 app.include_router(upload.router)
