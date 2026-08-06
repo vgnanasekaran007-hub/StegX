@@ -13,3 +13,4 @@ matplotlib
 pydub
 scipy
 PyWavelets
+pydantic
