@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Settings Page
  */
@@ -38,7 +39,7 @@ export function renderSettings(container) {
     </div>`;
 
   // Load current settings
-  fetch('/api/settings').then(r => r.json()).then(settings => {
+  apiFetch('/api/settings').then(r => r.json()).then(settings => {
     document.querySelectorAll('.setting-input').forEach(input => {
       const key = input.dataset.key;
       if (settings[key]) input.value = settings[key];
@@ -49,7 +50,7 @@ export function renderSettings(container) {
     const inputs = document.querySelectorAll('.setting-input');
     for (const input of inputs) {
       try {
-        await fetch(`/api/settings?key=${input.dataset.key}&value=${input.value}`, { method: 'POST' });
+        await apiFetch(`/api/settings?key=${input.dataset.key}&value=${input.value}`, { method: 'POST' });
       } catch (e) {}
     }
     toast.success('Settings Saved', 'Your preferences have been updated');

@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Metadata Inspector Page
  */
@@ -15,7 +16,7 @@ export function renderMetadataInspector(container) {
   initUploadZone('meta-upload', async (data) => {
     try {
       const form = new FormData(); form.append('file_id', data.file_id);
-      const res = await fetch('/api/metadata', { method: 'POST', body: form });
+      const res = await apiFetch('/api/metadata', { method: 'POST', body: form });
       const meta = await res.json();
       const r = document.getElementById('meta-results');
       r.classList.remove('hidden');

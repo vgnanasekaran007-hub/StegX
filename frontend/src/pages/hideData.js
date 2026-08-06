@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Hide Data Page
  * Universal hide module — step wizard for steganographic embedding.
@@ -228,7 +229,7 @@ async function loadCapacity() {
     formData.append('cover_type', coverFileData.file_type);
     formData.append('algorithm', algo);
 
-    const res = await fetch('/api/capacity', { method: 'POST', body: formData });
+    const res = await apiFetch('/api/capacity', { method: 'POST', body: formData });
     if (res.ok) {
       const data = await res.json();
       const secretSize = secretFileData?.size_bytes || 0;
@@ -280,7 +281,7 @@ async function processHide() {
   if (enc) { formData.append('encryption', enc); formData.append('password', pwd || 'default'); }
 
   try {
-    const res = await fetch('/api/hide', { method: 'POST', body: formData });
+    const res = await apiFetch('/api/hide', { method: 'POST', body: formData });
     const data = await res.json();
 
     if (res.ok && data.success) {

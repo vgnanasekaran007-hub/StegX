@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Capacity Analyzer Page
  */
@@ -23,7 +24,7 @@ export function renderCapacityAnalyzer(container) {
       try {
         const form = new FormData();
         form.append('file_id', data.file_id); form.append('cover_type', data.file_type); form.append('algorithm', algo);
-        const res = await fetch('/api/capacity', { method: 'POST', body: form });
+        const res = await apiFetch('/api/capacity', { method: 'POST', body: form });
         if (res.ok) results.push({ algo, ...(await res.json()) });
       } catch (e) { results.push({ algo, error: e.message }); }
     }

@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Text Steganography Page
  */
@@ -59,7 +60,7 @@ export function renderTextSteg(container) {
     try {
       const form = new FormData();
       form.append('cover_text', cover); form.append('secret_text', secret); form.append('method', method);
-      const res = await fetch('/api/hide/text', { method: 'POST', body: form });
+      const res = await apiFetch('/api/hide/text', { method: 'POST', body: form });
       const data = await res.json();
       if (data.success) {
         document.getElementById('text-hide-result').classList.remove('hidden');
@@ -78,7 +79,7 @@ export function renderTextSteg(container) {
       form.append('stego_text', stego);
       const method = document.getElementById('text-extract-method')?.value;
       if (method) form.append('method', method);
-      const res = await fetch('/api/extract/text', { method: 'POST', body: form });
+      const res = await apiFetch('/api/extract/text', { method: 'POST', body: form });
       const data = await res.json();
       if (data.success) {
         document.getElementById('text-extract-result').classList.remove('hidden');

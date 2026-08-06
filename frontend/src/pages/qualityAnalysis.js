@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Quality Analysis Page
  */
@@ -30,7 +31,7 @@ export function renderQualityAnalysis(container) {
       form.append('original_file_id', origFile.file_id);
       form.append('stego_file_id', stegoFile.file_id);
       form.append('cover_type', document.getElementById('qa-type')?.value || 'image');
-      const res = await fetch('/api/analysis', { method: 'POST', body: form });
+      const res = await apiFetch('/api/analysis', { method: 'POST', body: form });
       const data = await res.json();
       const r = document.getElementById('qa-results');
       r.classList.remove('hidden');

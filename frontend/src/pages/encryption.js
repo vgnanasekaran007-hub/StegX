@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Encryption Page
  */
@@ -53,7 +54,7 @@ export function renderEncryption(container) {
     const form = new FormData();
     form.append('file_id', encFileData.file_id); form.append('algorithm', document.getElementById('enc-algorithm')?.value); form.append('password', pwd);
     try {
-      const res = await fetch(`/api/${mode}`, { method: 'POST', body: form });
+      const res = await apiFetch(`/api/${mode}`, { method: 'POST', body: form });
       const data = await res.json();
       if (data.success) {
         document.getElementById('enc-result').classList.remove('hidden');

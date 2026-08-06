@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX History Page
  */
@@ -22,7 +23,7 @@ export function renderHistory(container) {
       const params = new URLSearchParams({ page, per_page: 15 });
       if (type) params.set('operation_type', type);
       if (search) params.set('search', search);
-      const res = await fetch(`/api/history?${params}`);
+      const res = await apiFetch(`/api/history?${params}`);
       const data = await res.json();
       const table = document.getElementById('hist-table');
       if (data.operations?.length > 0) {
@@ -34,7 +35,7 @@ export function renderHistory(container) {
             <td><button class="btn btn-ghost btn-sm hist-del" data-id="${op.id}">🗑</button></td></tr>`).join('')}
         </tbody></table>`;
         table.querySelectorAll('.hist-del').forEach(btn => btn.addEventListener('click', async () => {
-          await fetch(`/api/history/${btn.dataset.id}`, { method: 'DELETE' }); load(); toast.info('Deleted', 'Entry removed');
+          await apiFetch(`/api/history/${btn.dataset.id}`, { method: 'DELETE' }); load(); toast.info('Deleted', 'Entry removed');
         }));
       } else { table.innerHTML = '<div class="text-center text-muted" style="padding:32px;">No operations found</div>'; }
       document.getElementById('hist-page-info').textContent = `Page ${data.page} of ${data.total_pages || 1}`;

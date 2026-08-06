@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Dashboard Page
  * Animated hero, live statistics, quick actions, recent activity.
@@ -133,7 +134,7 @@ export function renderDashboard(container) {
 
 async function loadStats() {
   try {
-    const res = await fetch('/api/stats');
+    const res = await apiFetch('/api/stats');
     if (res.ok) {
       const data = await res.json();
       animateCounter(document.getElementById('stat-operations'), data.total_operations);
@@ -148,7 +149,7 @@ async function loadStats() {
 
 async function loadRecentActivity() {
   try {
-    const res = await fetch('/api/history?per_page=5');
+    const res = await apiFetch('/api/history?per_page=5');
     if (res.ok) {
       const data = await res.json();
       if (data.operations?.length > 0) {

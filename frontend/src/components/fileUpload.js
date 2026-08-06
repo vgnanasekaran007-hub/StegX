@@ -2,6 +2,7 @@
  * StegX File Upload Component
  * Drag-and-drop file uploader with progress and preview.
  */
+import { apiFetch } from '../api.js';
 
 export function createUploadZone(id, options = {}) {
   const accept = options.accept || '*/*';
@@ -77,7 +78,7 @@ async function handleUpload(id, file, onUpload) {
       if (progressText) progressText.textContent = `Uploading... ${Math.round(progress)}%`;
     }, 200);
 
-    const response = await fetch('/api/upload', {
+    const response = await apiFetch('/api/upload', {
       method: 'POST',
       body: formData,
     });

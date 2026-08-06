@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX AI Recommendation Page
  */
@@ -27,7 +28,7 @@ export function renderAIRecommend(container) {
     form.append('cover_file_id', coverData.file_id); form.append('cover_type', coverData.file_type);
     if (secretData) form.append('secret_file_id', secretData.file_id);
     try {
-      const res = await fetch('/api/recommend', { method: 'POST', body: form });
+      const res = await apiFetch('/api/recommend', { method: 'POST', body: form });
       const data = await res.json();
       const r = document.getElementById('ai-results');
       r.classList.remove('hidden');

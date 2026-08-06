@@ -1,3 +1,4 @@
+import { apiFetch } from '../api.js';
 /**
  * StegX Extract Data Page
  */
@@ -116,7 +117,7 @@ async function performExtraction() {
   if (enc) { formData.append('encryption', enc); formData.append('password', pwd || ''); }
 
   try {
-    const res = await fetch('/api/extract', { method: 'POST', body: formData });
+    const res = await apiFetch('/api/extract', { method: 'POST', body: formData });
     const data = await res.json();
 
     if (res.ok && data.success) {

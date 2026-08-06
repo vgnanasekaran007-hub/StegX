@@ -1,6 +1,9 @@
 # Environments & Security
 .env
-.env.*
+.env.local
+.env.*.local
+# .env.production is intentionally tracked (contains only public API URL)
+!.env.production
 .api
 .src
 *.pem
