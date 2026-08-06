@@ -31,7 +31,9 @@ export function renderSettings(container) {
     <div class="glass-panel mt-32 stagger-item">
       <h3 class="section-title">ℹ About StegX</h3>
       <div class="text-sm text-muted">
-        <p><strong style="color:var(--primary);">StegX 3D Universal Steganography Studio</strong> v1.0.0</p>
+        <p><strong style="color:var(--primary);">Designed & Developed by Gnanasekaran V</strong></p>
+        <p>Mail: <a href="mailto:v.gnanasekaran007@gmail.com" style="color:var(--accent); text-decoration:none;">v.gnanasekaran007@gmail.com</a> | GitHub: <a href="https://github.com/vgnanasekaran007-hub" target="_blank" style="color:var(--accent); text-decoration:none;">github.com/vgnanasekaran007-hub</a></p>
+        <p class="mt-8"><strong style="color:var(--primary);">StegX 3D Universal Steganography Studio</strong> v1.0.0</p>
         <p class="mt-8">AI-powered steganography platform supporting image, audio, video, and text steganography with advanced encryption, quality analysis, and immersive 3D visualization.</p>
         <p class="mt-8">Algorithms: LSB, DCT, DWT, Phase Coding, Echo Hiding, Spread Spectrum</p>
         <p>Encryption: AES-128/192/256, RSA, ECC, ChaCha20, Blowfish</p>
