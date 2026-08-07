@@ -1,4 +1,4 @@
-import { apiFetch } from '../api.js';
+import { apiFetch, getApiBase } from '../api.js';
 /**
  * StegX Encryption Page
  */
@@ -58,7 +58,7 @@ export function renderEncryption(container) {
       const data = await res.json();
       if (data.success) {
         document.getElementById('enc-result').classList.remove('hidden');
-        document.getElementById('enc-result').innerHTML = `<div class="holo-panel text-center" style="padding:24px;"><div style="font-size:40px;">✓</div><h3 style="color:var(--accent); font-family:var(--font-display); margin:12px 0;">${data.message}</h3><p class="text-xs text-muted font-mono">Hash: ${data.hash_verification}</p><a href="${data.download_url}" download class="btn btn-accent mt-16">⬇ Download</a></div>`;
+        document.getElementById('enc-result').innerHTML = `<div class="holo-panel text-center" style="padding:24px;"><div style="font-size:40px;">✓</div><h3 style="color:var(--accent); font-family:var(--font-display); margin:12px 0;">${data.message}</h3><p class="text-xs text-muted font-mono">Hash: ${data.hash_verification}</p><a href="${getApiBase()}${data.download_url}" download class="btn btn-accent mt-16">⬇ Download</a></div>`;
         toast.success('Done', data.message);
       } else throw new Error(data.detail);
     } catch (e) { toast.error('Error', e.message); }

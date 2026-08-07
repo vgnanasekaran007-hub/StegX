@@ -1,6 +1,6 @@
 /**
  * StegX File Upload Component
- * Drag-and-drop file uploader with progress and preview.
+ * Drag-and-drop file uploader with realistic progress and server wake-up handling.
  */
 import { apiFetch } from '../api.js';
 
@@ -66,18 +66,51 @@ async function handleUpload(id, file, onUpload) {
   if (progressDiv) progressDiv.classList.remove('hidden');
   if (resultDiv) resultDiv.classList.add('hidden');
 
+  // Reset styles
+  if (progressFill) {
+    progressFill.style.width = '0%';
+    progressFill.style.background = '';
+  }
+
   const formData = new FormData();
   formData.append('file', file);
 
-  try {
-    // Simulate progress
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-      progress = Math.min(progress + Math.random() * 20, 90);
-      if (progressFill) progressFill.style.width = `${progress}%`;
-      if (progressText) progressText.textContent = `Uploading... ${Math.round(progress)}%`;
-    }, 200);
+  // Phase-based progress simulation:
+  // Phase 1 (0-40%):  "Uploading..." — quick, first 2 seconds
+  // Phase 2 (40-70%): "Processing..." — moderate speed
+  // Phase 3 (70-90%): "Connecting to server..." — slower (Render cold start)
+  // Phase 4 (90-95%): "Server is waking up, please wait..." — very slow
+  let progress = 0;
+  let startTime = Date.now();
 
+  const progressInterval = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000; // seconds
+
+    if (progress < 40) {
+      progress += Math.random() * 8 + 2;
+      if (progressText) progressText.textContent = `Uploading ${file.name}... ${Math.round(Math.min(progress, 40))}%`;
+    } else if (progress < 70) {
+      progress += Math.random() * 3 + 0.5;
+      if (progressText) progressText.textContent = `Processing... ${Math.round(Math.min(progress, 70))}%`;
+    } else if (progress < 90) {
+      progress += Math.random() * 1.5 + 0.2;
+      if (progressText) progressText.textContent = `Connecting to server... ${Math.round(Math.min(progress, 90))}%`;
+    } else if (progress < 95) {
+      progress += Math.random() * 0.3 + 0.05;
+      if (progressText) {
+        if (elapsed > 15) {
+          progressText.textContent = `⏳ Server is waking up (free tier), please wait... ${Math.round(progress)}%`;
+        } else {
+          progressText.textContent = `Finalizing... ${Math.round(progress)}%`;
+        }
+      }
+    }
+
+    progress = Math.min(progress, 95);
+    if (progressFill) progressFill.style.width = `${progress}%`;
+  }, 500);
+
+  try {
     const response = await apiFetch('/api/upload', {
       method: 'POST',
       body: formData,
@@ -85,7 +118,7 @@ async function handleUpload(id, file, onUpload) {
 
     clearInterval(progressInterval);
     if (progressFill) progressFill.style.width = '100%';
-    if (progressText) progressText.textContent = 'Upload complete!';
+    if (progressText) progressText.textContent = '✓ Upload complete!';
 
     if (!response.ok) {
       const err = await response.json();
@@ -112,7 +145,8 @@ async function handleUpload(id, file, onUpload) {
     if (onUpload) onUpload(data);
 
   } catch (error) {
-    if (progressText) progressText.textContent = `Error: ${error.message}`;
+    clearInterval(progressInterval);
+    if (progressText) progressText.textContent = `✕ ${error.message}`;
     if (progressFill) {
       progressFill.style.width = '100%';
       progressFill.style.background = 'var(--danger)';

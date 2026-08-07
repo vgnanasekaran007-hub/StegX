@@ -1,4 +1,4 @@
-import { apiFetch } from '../api.js';
+import { apiFetch, getApiBase } from '../api.js';
 /**
  * StegX Hide Data Page
  * Universal hide module — step wizard for steganographic embedding.
@@ -295,7 +295,7 @@ async function processHide() {
             <div style="font-size:48px; margin-bottom:16px;">✓</div>
             <h3 style="font-family:var(--font-display); font-size:20px; color:var(--accent); margin-bottom:8px;">Embedding Successful!</h3>
             <p class="text-sm text-muted mb-24">${data.message}</p>
-            <a href="${data.download_url}" download class="btn btn-accent btn-lg">⬇ Download Stego File</a>
+            <a href="${getApiBase()}${data.download_url}" download class="btn btn-accent btn-lg">⬇ Download Stego File</a>
           </div>
           ${data.quality_metrics ? `
             <div class="mt-24" style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">

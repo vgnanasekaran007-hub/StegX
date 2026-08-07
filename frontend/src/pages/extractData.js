@@ -1,4 +1,4 @@
-import { apiFetch } from '../api.js';
+import { apiFetch, getApiBase } from '../api.js';
 /**
  * StegX Extract Data Page
  */
@@ -154,7 +154,7 @@ async function performExtraction() {
             </div>
           </div>
           ${preview}
-          <a href="${data.download_url}" download class="btn btn-accent btn-lg mt-24">⬇ Download Extracted File</a>
+          <a href="${getApiBase()}${data.download_url}" download class="btn btn-accent btn-lg mt-24">⬇ Download Extracted File</a>
         </div>
       `;
       toast.success('Extraction Complete', data.message);
