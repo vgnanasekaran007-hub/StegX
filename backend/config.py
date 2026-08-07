@@ -55,8 +55,9 @@ FILE_MAX_AGE = 86400  # 24 hours
 # or "*" for wildcard (note: wildcard disables credentials).
 API_PREFIX = "/api"
 
-# Default allowed origins: Render deploy + local dev
+# Default allowed origins: Vercel frontend + Render self + local dev
 _DEFAULT_ORIGINS = [
+    "https://steg-x-qjt6.vercel.app",
     "https://stegx-03ut.onrender.com",
     "http://localhost:5173",
     "http://localhost:3000",
