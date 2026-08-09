@@ -17,7 +17,7 @@ backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from config import CORS_ORIGINS, UPLOAD_DIR, OUTPUT_DIR, FILE_MAX_AGE
+from config import UPLOAD_DIR, OUTPUT_DIR, FILE_MAX_AGE
 import database
 from routes import upload, hide, extract, encrypt, analysis, history
 
@@ -57,13 +57,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
-# Note: allow_credentials cannot be True when allow_origins is ["*"] per CORS spec.
-_use_credentials = "*" not in CORS_ORIGINS
+# CORS middleware — allow ALL origins so any frontend (Vercel, Netlify, localhost) works.
+# This is hardcoded to ["*"] to prevent env-var misconfiguration from blocking requests.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS if isinstance(CORS_ORIGINS, list) else [CORS_ORIGINS],
-    allow_credentials=_use_credentials,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -92,7 +91,8 @@ async def health_check():
     return {
         "status": "online",
         "service": "StegX",
-        "version": "1.0.0",
+        "version": "1.0.1",
+        "cors": "wildcard",
         "engines": {
             "image": ["lsb", "dct", "dwt", "hybrid"],
             "audio": ["lsb", "phase_coding", "echo_hiding", "spread_spectrum"],
