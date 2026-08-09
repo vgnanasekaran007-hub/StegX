@@ -51,25 +51,13 @@ CLEANUP_INTERVAL = 3600  # 1 hour
 FILE_MAX_AGE = 86400  # 24 hours
 
 # API settings & CORS
-# CORS_ORIGINS env var can be set to a comma-separated list of allowed origins,
-# or "*" for wildcard (note: wildcard disables credentials).
+# Default: wildcard "*" allows any frontend origin (Vercel, Netlify, localhost, etc.)
+# To restrict, set CORS_ORIGINS env var to a comma-separated list of allowed origins.
 API_PREFIX = "/api"
 
-# Default allowed origins: Vercel frontend + Render self + local dev
-_DEFAULT_ORIGINS = [
-    "https://steg-x-qjt6.vercel.app",
-    "https://stegx-03ut.onrender.com",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-]
-
-CORS_ORIGINS_ENV = os.getenv("CORS_ORIGINS", "")
+CORS_ORIGINS_ENV = os.getenv("CORS_ORIGINS", "*")
 if CORS_ORIGINS_ENV == "*":
     CORS_ORIGINS = ["*"]
-elif CORS_ORIGINS_ENV:
-    # Comma-separated list from env
-    CORS_ORIGINS = [o.strip() for o in CORS_ORIGINS_ENV.split(",") if o.strip()]
 else:
-    CORS_ORIGINS = _DEFAULT_ORIGINS
+    CORS_ORIGINS = [o.strip() for o in CORS_ORIGINS_ENV.split(",") if o.strip()]
+

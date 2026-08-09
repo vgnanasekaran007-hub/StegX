@@ -1,3 +1,4 @@
+
 /**
  * StegX Modal Component
  */
