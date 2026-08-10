@@ -1,8 +1,11 @@
 /**
- * StegX Navbar Component
+ * StegX Navbar Component — Rewritten from Scratch
  */
+
 export function renderNavbar() {
   const navbar = document.getElementById('navbar');
+  if (!navbar) return;
+
   navbar.innerHTML = `
     <a href="#/" class="nav-brand" id="nav-brand">
       <div class="nav-logo">SX</div>
@@ -23,8 +26,12 @@ export function renderNavbar() {
     </button>
   `;
 
-  // Hamburger toggle
-  document.getElementById('nav-hamburger')?.addEventListener('click', () => {
-    document.getElementById('sidebar')?.classList.toggle('open');
-  });
+  // Hamburger toggle for mobile
+  const hamburger = document.getElementById('nav-hamburger');
+  if (hamburger) {
+    hamburger.addEventListener('click', () => {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.classList.toggle('open');
+    });
+  }
 }

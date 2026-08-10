@@ -1,6 +1,6 @@
 /**
- * StegX Particle System
- * Creates floating particle system with cyberpunk aesthetics.
+ * StegX Particle System — Rewritten from Scratch
+ * Creates floating particle cloud with cyberpunk glow.
  */
 import * as THREE from 'three';
 
@@ -10,32 +10,32 @@ export class ParticleSystem {
     this.count = count;
     this.particles = null;
     this.velocities = [];
-    this.init();
+    this._init();
   }
 
-  init() {
-    const geometry = new THREE.BufferGeometry();
+  _init() {
+    const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(this.count * 3);
-    const colors = new Float32Array(this.count * 3);
-    const sizes = new Float32Array(this.count);
+    const colors    = new Float32Array(this.count * 3);
+    const sizes     = new Float32Array(this.count);
 
-    const colorPalette = [
-      new THREE.Color(0x00E5FF),
-      new THREE.Color(0x7B61FF),
-      new THREE.Color(0x00FF88),
-      new THREE.Color(0x00B8D4),
-      new THREE.Color(0x6246EA),
+    const palette = [
+      new THREE.Color(0x00e5ff),
+      new THREE.Color(0x7b61ff),
+      new THREE.Color(0x00ff88),
+      new THREE.Color(0x00b8d4),
+      new THREE.Color(0x6246ea),
     ];
 
     for (let i = 0; i < this.count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 1200;
+      positions[i * 3]     = (Math.random() - 0.5) * 1200;
       positions[i * 3 + 1] = (Math.random() - 0.5) * 800;
       positions[i * 3 + 2] = (Math.random() - 0.5) * 600;
 
-      const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      colors[i * 3]     = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
 
       sizes[i] = Math.random() * 3 + 0.5;
 
@@ -46,35 +46,35 @@ export class ParticleSystem {
       });
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+    geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
 
-    const material = new THREE.ShaderMaterial({
+    const mat = new THREE.ShaderMaterial({
       uniforms: {
-        uTime: { value: 0 },
+        uTime:       { value: 0 },
         uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
       },
       vertexShader: `
         attribute float size;
         attribute vec3 color;
-        varying vec3 vColor;
+        varying vec3  vColor;
         varying float vAlpha;
         uniform float uTime;
         uniform float uPixelRatio;
 
         void main() {
           vColor = color;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float dist = length(mvPosition.xyz);
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          float dist = length(mv.xyz);
           vAlpha = smoothstep(800.0, 100.0, dist) * 0.8;
-          gl_PointSize = size * uPixelRatio * (200.0 / -mvPosition.z);
+          gl_PointSize = size * uPixelRatio * (200.0 / -mv.z);
           gl_PointSize = clamp(gl_PointSize, 0.5, 8.0);
-          gl_Position = projectionMatrix * mvPosition;
+          gl_Position  = projectionMatrix * mv;
         }
       `,
       fragmentShader: `
-        varying vec3 vColor;
+        varying vec3  vColor;
         varying float vAlpha;
 
         void main() {
@@ -90,28 +90,28 @@ export class ParticleSystem {
       blending: THREE.AdditiveBlending,
     });
 
-    this.particles = new THREE.Points(geometry, material);
+    this.particles = new THREE.Points(geo, mat);
     this.scene.add(this.particles);
   }
 
   update(time) {
     if (!this.particles) return;
 
-    const positions = this.particles.geometry.attributes.position.array;
+    const pos = this.particles.geometry.attributes.position.array;
     this.particles.material.uniforms.uTime.value = time;
 
     for (let i = 0; i < this.count; i++) {
-      positions[i * 3] += this.velocities[i].x;
-      positions[i * 3 + 1] += this.velocities[i].y;
-      positions[i * 3 + 2] += this.velocities[i].z;
+      pos[i * 3]     += this.velocities[i].x;
+      pos[i * 3 + 1] += this.velocities[i].y;
+      pos[i * 3 + 2] += this.velocities[i].z;
 
-      // Wrap around boundaries
-      if (positions[i * 3] > 600) positions[i * 3] = -600;
-      if (positions[i * 3] < -600) positions[i * 3] = 600;
-      if (positions[i * 3 + 1] > 400) positions[i * 3 + 1] = -400;
-      if (positions[i * 3 + 1] < -400) positions[i * 3 + 1] = 400;
-      if (positions[i * 3 + 2] > 300) positions[i * 3 + 2] = -300;
-      if (positions[i * 3 + 2] < -300) positions[i * 3 + 2] = 300;
+      // Wrap around
+      if (pos[i * 3]     >  600) pos[i * 3]     = -600;
+      if (pos[i * 3]     < -600) pos[i * 3]     =  600;
+      if (pos[i * 3 + 1] >  400) pos[i * 3 + 1] = -400;
+      if (pos[i * 3 + 1] < -400) pos[i * 3 + 1] =  400;
+      if (pos[i * 3 + 2] >  300) pos[i * 3 + 2] = -300;
+      if (pos[i * 3 + 2] < -300) pos[i * 3 + 2] =  300;
     }
 
     this.particles.geometry.attributes.position.needsUpdate = true;
@@ -123,6 +123,7 @@ export class ParticleSystem {
       this.particles.geometry.dispose();
       this.particles.material.dispose();
       this.scene.remove(this.particles);
+      this.particles = null;
     }
   }
 }

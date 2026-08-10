@@ -1,9 +1,17 @@
 /**
- * StegX File Upload Component
- * Drag-and-drop file uploader with realistic progress and server wake-up handling.
+ * StegX File Upload Component — Rewritten from Scratch
+ *
+ * Drag-and-drop AND click-to-browse file uploader with realistic
+ * progress simulation, server cold-start handling, and clean error UI.
  */
-import { apiFetch } from '../api.js';
+import { apiFetch, formatSize } from '../api.js';
 
+/* ── HTML Template ─────────────────────────────────────────────── */
+
+/**
+ * Returns the HTML string for an upload zone.
+ * Call initUploadZone() after inserting into the DOM.
+ */
 export function createUploadZone(id, options = {}) {
   const accept = options.accept || '*/*';
   const label = options.label || 'Drop your file here or click to browse';
@@ -11,8 +19,10 @@ export function createUploadZone(id, options = {}) {
   const icon = options.icon || '📁';
 
   return `
-    <div class="upload-zone" id="${id}">
-      <input type="file" accept="${accept}" id="${id}-input">
+    <div class="upload-zone" id="${id}" tabindex="0" role="button"
+         aria-label="${label}">
+      <input type="file" accept="${accept}" id="${id}-input"
+             style="display:none;">
       <div class="upload-zone-icon">${icon}</div>
       <div class="upload-zone-title">${label}</div>
       <div class="upload-zone-subtitle">${subtitle}</div>
@@ -20,95 +30,124 @@ export function createUploadZone(id, options = {}) {
         <div class="progress-bar">
           <div class="progress-fill" id="${id}-progress-fill" style="width:0%"></div>
         </div>
-        <div class="text-xs text-muted mt-8" id="${id}-progress-text">Uploading...</div>
+        <div class="text-xs text-muted mt-8" id="${id}-progress-text">Uploading…</div>
       </div>
       <div class="upload-result hidden" id="${id}-result"></div>
     </div>
   `;
 }
 
+/* ── Initialisation ────────────────────────────────────────────── */
+
+/**
+ * Wire up the upload zone identified by `id`.
+ * @param {string} id    — must match the id passed to createUploadZone
+ * @param {Function} onUpload — callback(data) on successful upload
+ */
 export function initUploadZone(id, onUpload) {
   const zone = document.getElementById(id);
   const input = document.getElementById(`${id}-input`);
   if (!zone || !input) return;
 
-  // Drag events
-  ['dragenter', 'dragover'].forEach(event => {
-    zone.addEventListener(event, (e) => {
-      e.preventDefault();
-      zone.classList.add('dragover');
-    });
+  // ── Click to browse (the key fix!) ──────────────────────────
+  zone.addEventListener('click', (e) => {
+    // Don't re-trigger if clicking the input itself
+    if (e.target === input) return;
+    input.click();
   });
 
-  ['dragleave', 'drop'].forEach(event => {
-    zone.addEventListener(event, (e) => {
+  // Keyboard accessibility
+  zone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      zone.classList.remove('dragover');
-    });
+      input.click();
+    }
   });
 
+  // ── Drag-and-drop ──────────────────────────────────────────
+  zone.addEventListener('dragenter', _prevent);
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('dragover');
+  });
+  zone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+  });
   zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
     const files = e.dataTransfer.files;
-    if (files.length > 0) handleUpload(id, files[0], onUpload);
+    if (files.length > 0) _handleUpload(id, files[0], onUpload);
   });
 
+  // ── File input change ──────────────────────────────────────
   input.addEventListener('change', () => {
-    if (input.files.length > 0) handleUpload(id, input.files[0], onUpload);
+    if (input.files.length > 0) {
+      _handleUpload(id, input.files[0], onUpload);
+      // Reset so the same file can be re-selected
+      input.value = '';
+    }
   });
 }
 
-async function handleUpload(id, file, onUpload) {
+/* ── Upload Handler ────────────────────────────────────────────── */
+
+async function _handleUpload(id, file, onUpload) {
   const progressDiv = document.getElementById(`${id}-progress`);
   const progressFill = document.getElementById(`${id}-progress-fill`);
   const progressText = document.getElementById(`${id}-progress-text`);
   const resultDiv = document.getElementById(`${id}-result`);
 
+  // Show progress, hide previous result
   if (progressDiv) progressDiv.classList.remove('hidden');
   if (resultDiv) resultDiv.classList.add('hidden');
-
-  // Reset styles
   if (progressFill) {
     progressFill.style.width = '0%';
     progressFill.style.background = '';
   }
 
-  const formData = new FormData();
-  formData.append('file', file);
-
-  // Phase-based progress simulation:
-  // Phase 1 (0-40%):  "Uploading..." — quick, first 2 seconds
-  // Phase 2 (40-70%): "Processing..." — moderate speed
-  // Phase 3 (70-90%): "Connecting to server..." — slower (Render cold start)
-  // Phase 4 (90-95%): "Server is waking up, please wait..." — very slow
+  // ── Progress simulation ────────────────────────────────────
   let progress = 0;
-  let startTime = Date.now();
+  const startTime = Date.now();
 
   const progressInterval = setInterval(() => {
-    const elapsed = (Date.now() - startTime) / 1000; // seconds
+    const elapsed = (Date.now() - startTime) / 1000;
 
     if (progress < 40) {
       progress += Math.random() * 8 + 2;
-      if (progressText) progressText.textContent = `Uploading ${file.name}... ${Math.round(Math.min(progress, 40))}%`;
+      if (progressText) {
+        progressText.textContent =
+          `Uploading ${file.name}… ${Math.round(Math.min(progress, 40))}%`;
+      }
     } else if (progress < 70) {
       progress += Math.random() * 3 + 0.5;
-      if (progressText) progressText.textContent = `Processing... ${Math.round(Math.min(progress, 70))}%`;
+      if (progressText) {
+        progressText.textContent = `Processing… ${Math.round(Math.min(progress, 70))}%`;
+      }
     } else if (progress < 90) {
       progress += Math.random() * 1.5 + 0.2;
-      if (progressText) progressText.textContent = `Connecting to server... ${Math.round(Math.min(progress, 90))}%`;
+      if (progressText) {
+        progressText.textContent =
+          `Connecting to server… ${Math.round(Math.min(progress, 90))}%`;
+      }
     } else if (progress < 95) {
       progress += Math.random() * 0.3 + 0.05;
       if (progressText) {
-        if (elapsed > 15) {
-          progressText.textContent = `⏳ Server is waking up (free tier), please wait... ${Math.round(progress)}%`;
-        } else {
-          progressText.textContent = `Finalizing... ${Math.round(progress)}%`;
-        }
+        progressText.textContent =
+          elapsed > 15
+            ? `⏳ Server is waking up (free tier), please wait… ${Math.round(progress)}%`
+            : `Finalising… ${Math.round(progress)}%`;
       }
     }
 
     progress = Math.min(progress, 95);
     if (progressFill) progressFill.style.width = `${progress}%`;
   }, 500);
+
+  // ── Actual upload ──────────────────────────────────────────
+  const formData = new FormData();
+  formData.append('file', file);
 
   try {
     const response = await apiFetch('/api/upload', {
@@ -121,21 +160,29 @@ async function handleUpload(id, file, onUpload) {
     if (progressText) progressText.textContent = '✓ Upload complete!';
 
     if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.detail || 'Upload failed');
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || `Upload failed (HTTP ${response.status})`);
     }
 
     const data = await response.json();
 
-    // Show result
+    // Show result card
     if (resultDiv) {
       resultDiv.classList.remove('hidden');
       resultDiv.innerHTML = `
-        <div class="flex items-center gap-12 mt-16" style="padding: 12px; background: var(--bg-glass); border-radius: var(--radius-md); border: 1px solid var(--border-glass);">
-          <span style="font-size: 24px;">${getFileIcon(data.file_type)}</span>
+        <div class="flex items-center gap-12 mt-16"
+             style="padding:12px; background:var(--bg-glass);
+                    border-radius:var(--radius-md);
+                    border:1px solid var(--border-glass);">
+          <span style="font-size:24px;">${_fileIcon(data.file_type)}</span>
           <div style="flex:1; min-width:0;">
-            <div style="font-weight:600; font-size:13px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${data.filename}</div>
-            <div class="text-xs text-muted">${data.size_readable || formatSize(data.size_bytes)} · ${data.file_type}</div>
+            <div style="font-weight:600; font-size:13px; color:var(--text-primary);
+                        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${data.filename}
+            </div>
+            <div class="text-xs text-muted">
+              ${data.size_readable || formatSize(data.size_bytes)} · ${data.file_type}
+            </div>
           </div>
           <span class="tag tag-accent">✓ Ready</span>
         </div>
@@ -143,7 +190,6 @@ async function handleUpload(id, file, onUpload) {
     }
 
     if (onUpload) onUpload(data);
-
   } catch (error) {
     clearInterval(progressInterval);
     if (progressText) progressText.textContent = `✕ ${error.message}`;
@@ -155,8 +201,14 @@ async function handleUpload(id, file, onUpload) {
   }
 }
 
-function getFileIcon(type) {
-  const icons = {
+/* ── Helpers ───────────────────────────────────────────────────── */
+
+function _prevent(e) {
+  e.preventDefault();
+}
+
+function _fileIcon(type) {
+  const map = {
     image: '🖼️',
     audio: '🎵',
     video: '🎬',
@@ -164,11 +216,5 @@ function getFileIcon(type) {
     other: '📁',
     unknown: '📁',
   };
-  return icons[type] || '📁';
-}
-
-function formatSize(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  return map[type] || '📁';
 }

@@ -1,56 +1,65 @@
 /**
- * StegX Charts Component
+ * StegX Charts Component — Rewritten from Scratch
  * Chart.js integration with cyberpunk styling.
  */
 import Chart from 'chart.js/auto';
 
-const cyberpunkColors = {
-  primary: '#00E5FF',
+/* ── Colour Palette ────────────────────────────────────────────── */
+
+const COLORS = {
+  primary:   '#00E5FF',
   secondary: '#7B61FF',
-  accent: '#00FF88',
-  danger: '#FF3D71',
-  warning: '#FFB800',
-  grid: 'rgba(255, 255, 255, 0.05)',
-  text: '#9BA1B0',
+  accent:    '#00FF88',
+  danger:    '#FF3D71',
+  warning:   '#FFB800',
+  grid:      'rgba(255, 255, 255, 0.05)',
+  text:      '#9BA1B0',
 };
 
-const defaultOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      labels: {
-        color: cyberpunkColors.text,
-        font: { family: "'Rajdhani', sans-serif", size: 12 },
-        padding: 16,
-      },
-    },
-    tooltip: {
-      backgroundColor: 'rgba(10, 14, 39, 0.95)',
-      titleColor: '#E8EAED',
-      bodyColor: '#9BA1B0',
-      borderColor: 'rgba(0, 229, 255, 0.2)',
-      borderWidth: 1,
-      cornerRadius: 8,
-      titleFont: { family: "'Orbitron', sans-serif", size: 12 },
-      bodyFont: { family: "'Rajdhani', sans-serif", size: 13 },
-      padding: 12,
+/* ── Shared Defaults ───────────────────────────────────────────── */
+
+const FONT_DISPLAY = "'Orbitron', sans-serif";
+const FONT_BODY    = "'Rajdhani', sans-serif";
+
+const defaultPlugins = {
+  legend: {
+    labels: {
+      color: COLORS.text,
+      font: { family: FONT_BODY, size: 12 },
+      padding: 16,
     },
   },
-  scales: {
-    x: {
-      ticks: { color: cyberpunkColors.text, font: { family: "'Rajdhani', sans-serif" } },
-      grid: { color: cyberpunkColors.grid },
-      border: { color: cyberpunkColors.grid },
-    },
-    y: {
-      ticks: { color: cyberpunkColors.text, font: { family: "'Rajdhani', sans-serif" } },
-      grid: { color: cyberpunkColors.grid },
-      border: { color: cyberpunkColors.grid },
-    },
+  tooltip: {
+    backgroundColor: 'rgba(10, 14, 39, 0.95)',
+    titleColor: '#E8EAED',
+    bodyColor: '#9BA1B0',
+    borderColor: 'rgba(0, 229, 255, 0.2)',
+    borderWidth: 1,
+    cornerRadius: 8,
+    titleFont: { family: FONT_DISPLAY, size: 12 },
+    bodyFont: { family: FONT_BODY, size: 13 },
+    padding: 12,
   },
 };
 
+const defaultScales = {
+  x: {
+    ticks:  { color: COLORS.text, font: { family: FONT_BODY } },
+    grid:   { color: COLORS.grid },
+    border: { color: COLORS.grid },
+  },
+  y: {
+    ticks:  { color: COLORS.text, font: { family: FONT_BODY } },
+    grid:   { color: COLORS.grid },
+    border: { color: COLORS.grid },
+  },
+};
+
+/* ── Chart Factories ───────────────────────────────────────────── */
+
+/**
+ * Histogram chart — overlay two 256-bin distributions (original vs stego).
+ */
 export function createHistogramChart(canvasId, originalData, stegoData) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return null;
@@ -65,7 +74,7 @@ export function createHistogramChart(canvasId, originalData, stegoData) {
         {
           label: 'Original',
           data: originalData,
-          borderColor: cyberpunkColors.primary,
+          borderColor: COLORS.primary,
           backgroundColor: 'rgba(0, 229, 255, 0.1)',
           borderWidth: 1,
           pointRadius: 0,
@@ -75,7 +84,7 @@ export function createHistogramChart(canvasId, originalData, stegoData) {
         {
           label: 'Stego',
           data: stegoData,
-          borderColor: cyberpunkColors.danger,
+          borderColor: COLORS.danger,
           backgroundColor: 'rgba(255, 61, 113, 0.1)',
           borderWidth: 1,
           pointRadius: 0,
@@ -85,23 +94,31 @@ export function createHistogramChart(canvasId, originalData, stegoData) {
       ],
     },
     options: {
-      ...defaultOptions,
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        ...defaultOptions.plugins,
-        title: { display: true, text: 'Pixel Histogram Comparison', color: '#E8EAED', font: { family: "'Orbitron', sans-serif", size: 14 } },
+        ...defaultPlugins,
+        title: {
+          display: true,
+          text: 'Pixel Histogram Comparison',
+          color: '#E8EAED',
+          font: { family: FONT_DISPLAY, size: 14 },
+        },
       },
+      scales: defaultScales,
     },
   });
 }
 
+/**
+ * Bar chart with optional custom colours.
+ */
 export function createBarChart(canvasId, labels, values, colors = null) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return null;
 
-  const bgColors = colors || labels.map((_, i) => {
-    const palette = [cyberpunkColors.primary, cyberpunkColors.secondary, cyberpunkColors.accent, cyberpunkColors.warning, cyberpunkColors.danger];
-    return palette[i % palette.length];
-  });
+  const palette = [COLORS.primary, COLORS.secondary, COLORS.accent, COLORS.warning, COLORS.danger];
+  const bgColors = colors || labels.map((_, i) => palette[i % palette.length]);
 
   return new Chart(canvas, {
     type: 'bar',
@@ -109,22 +126,29 @@ export function createBarChart(canvasId, labels, values, colors = null) {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: bgColors.map(c => c + '40'),
+        backgroundColor: bgColors.map((c) => c + '40'),
         borderColor: bgColors,
         borderWidth: 1,
         borderRadius: 6,
       }],
     },
     options: {
-      ...defaultOptions,
-      plugins: { ...defaultOptions.plugins, legend: { display: false } },
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { ...defaultPlugins, legend: { display: false } },
+      scales: defaultScales,
     },
   });
 }
 
+/**
+ * Radar chart for multi-dimensional comparison.
+ */
 export function createRadarChart(canvasId, labels, datasets) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return null;
+
+  const palette = [COLORS.primary, COLORS.secondary, COLORS.accent];
 
   return new Chart(canvas, {
     type: 'radar',
@@ -133,10 +157,10 @@ export function createRadarChart(canvasId, labels, datasets) {
       datasets: datasets.map((ds, i) => ({
         label: ds.label,
         data: ds.data,
-        borderColor: [cyberpunkColors.primary, cyberpunkColors.secondary, cyberpunkColors.accent][i % 3],
-        backgroundColor: [cyberpunkColors.primary, cyberpunkColors.secondary, cyberpunkColors.accent][i % 3] + '20',
+        borderColor: palette[i % 3],
+        backgroundColor: palette[i % 3] + '20',
         borderWidth: 2,
-        pointBackgroundColor: [cyberpunkColors.primary, cyberpunkColors.secondary, cyberpunkColors.accent][i % 3],
+        pointBackgroundColor: palette[i % 3],
         pointRadius: 4,
       })),
     },
@@ -145,20 +169,25 @@ export function createRadarChart(canvasId, labels, datasets) {
       maintainAspectRatio: false,
       scales: {
         r: {
-          ticks: { color: cyberpunkColors.text, backdropColor: 'transparent', font: { size: 10 } },
-          grid: { color: cyberpunkColors.grid },
-          pointLabels: { color: cyberpunkColors.text, font: { family: "'Rajdhani', sans-serif", size: 12 } },
-          angleLines: { color: cyberpunkColors.grid },
+          ticks:       { color: COLORS.text, backdropColor: 'transparent', font: { size: 10 } },
+          grid:        { color: COLORS.grid },
+          pointLabels: { color: COLORS.text, font: { family: FONT_BODY, size: 12 } },
+          angleLines:  { color: COLORS.grid },
         },
       },
-      plugins: defaultOptions.plugins,
+      plugins: defaultPlugins,
     },
   });
 }
 
+/**
+ * Doughnut chart.
+ */
 export function createDoughnutChart(canvasId, labels, values) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return null;
+
+  const palette = [COLORS.primary, COLORS.secondary, COLORS.accent, COLORS.warning, COLORS.danger];
 
   return new Chart(canvas, {
     type: 'doughnut',
@@ -166,20 +195,8 @@ export function createDoughnutChart(canvasId, labels, values) {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: [
-          cyberpunkColors.primary + '80',
-          cyberpunkColors.secondary + '80',
-          cyberpunkColors.accent + '80',
-          cyberpunkColors.warning + '80',
-          cyberpunkColors.danger + '80',
-        ],
-        borderColor: [
-          cyberpunkColors.primary,
-          cyberpunkColors.secondary,
-          cyberpunkColors.accent,
-          cyberpunkColors.warning,
-          cyberpunkColors.danger,
-        ],
+        backgroundColor: palette.map((c) => c + '80'),
+        borderColor: palette,
         borderWidth: 2,
       }],
     },
@@ -187,7 +204,7 @@ export function createDoughnutChart(canvasId, labels, values) {
       responsive: true,
       maintainAspectRatio: false,
       cutout: '65%',
-      plugins: defaultOptions.plugins,
+      plugins: defaultPlugins,
     },
   });
 }
