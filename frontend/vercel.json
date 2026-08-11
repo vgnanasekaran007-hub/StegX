@@ -1,7 +1,8 @@
 {
   "version": 2,
-  "installCommand": "npm install",
   "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
