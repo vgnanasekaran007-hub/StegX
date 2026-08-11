@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/:path*", "destination": "https://stegx-03ut.onrender.com/api/:path*" },
+    { "source": "/uploads/:path*", "destination": "https://stegx-03ut.onrender.com/uploads/:path*" },
+    { "source": "/outputs/:path*", "destination": "https://stegx-03ut.onrender.com/outputs/:path*" },
+    { "source": "/:path*", "destination": "/index.html" }
   ]
 }
