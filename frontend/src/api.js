@@ -243,7 +243,7 @@ export async function healthCheck() {
     try {
       const res = await _fetchWithTimeout(`${BASE}/api/health`, {
         headers: API_KEY ? { 'X-API-Key': API_KEY } : {},
-      }, 10_000);
+      }, 50_000);
       const latencyMs = Date.now() - start;
       _lastHealthStatus = { alive: res.ok, latencyMs, timestamp: Date.now() };
       return _lastHealthStatus;
