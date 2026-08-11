@@ -1,6 +1,12 @@
 /**
- * StegX Three.js Scene Manager — Rewritten from Scratch
- * Creates the immersive 3D background with lighting and mouse tracking.
+ * StegX Three.js Scene Manager — v2.0 Enhanced Rewrite
+ *
+ * Features:
+ *  - Adaptive quality based on device performance
+ *  - Smooth mouse tracking with easing
+ *  - Post-processing ready architecture
+ *  - Clean resize handling with debounce
+ *  - FPS monitoring for auto quality adjustment
  */
 import * as THREE from 'three';
 
@@ -8,6 +14,9 @@ let scene, camera, renderer;
 let animationId = null;
 let mouseX = 0;
 let mouseY = 0;
+let _qualityLevel = 'high'; // 'high' | 'medium' | 'low'
+let _fpsHistory = [];
+let _lastFrameTime = 0;
 
 /**
  * Initialise the Three.js scene, camera, renderer, and lights.
@@ -17,9 +26,12 @@ export function initScene() {
   const canvas = document.getElementById('three-canvas');
   if (!canvas) return undefined;
 
+  // Detect device performance
+  _qualityLevel = _detectQuality();
+
   // Scene
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x050816, 0.0008);
+  scene.fog = new THREE.FogExp2(0x050816, _qualityLevel === 'low' ? 0.0012 : 0.0008);
 
   // Camera
   camera = new THREE.PerspectiveCamera(
@@ -31,13 +43,23 @@ export function initScene() {
   camera.position.set(0, 0, 400);
 
   // Renderer
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const pixelRatio = _qualityLevel === 'low'
+    ? 1
+    : Math.min(window.devicePixelRatio, _qualityLevel === 'medium' ? 1.5 : 2);
+
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: _qualityLevel !== 'low',
+    alpha: true,
+    powerPreference: 'high-performance',
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(pixelRatio);
   renderer.setClearColor(0x050816, 1);
 
   // Lighting
-  scene.add(new THREE.AmbientLight(0x111640, 0.5));
+  const ambient = new THREE.AmbientLight(0x111640, 0.5);
+  scene.add(ambient);
 
   const light1 = new THREE.PointLight(0x00e5ff, 2, 600);
   light1.position.set(200, 200, 200);
@@ -52,8 +74,10 @@ export function initScene() {
   scene.add(light3);
 
   // Mouse tracking
-  document.addEventListener('mousemove', _onMouseMove);
+  document.addEventListener('mousemove', _onMouseMove, { passive: true });
   window.addEventListener('resize', _onResize);
+
+  console.log(`[StegX] Three.js scene initialized (quality: ${_qualityLevel})`);
 
   return { scene, camera, renderer };
 }
@@ -62,27 +86,46 @@ export function initScene() {
  * Start the animation loop. `callback` is called each frame.
  */
 export function animate(callback) {
-  function loop() {
+  _lastFrameTime = performance.now();
+
+  function loop(now) {
     animationId = requestAnimationFrame(loop);
 
-    // Smooth camera follow mouse
+    // Track FPS for adaptive quality
+    const delta = now - _lastFrameTime;
+    _lastFrameTime = now;
+    if (delta > 0) {
+      _fpsHistory.push(1000 / delta);
+      if (_fpsHistory.length > 60) _fpsHistory.shift();
+    }
+
+    // Smooth camera follow mouse with easing
     if (camera) {
-      camera.position.x += (mouseX * 30 - camera.position.x) * 0.02;
-      camera.position.y += (-mouseY * 20 - camera.position.y) * 0.02;
+      const targetX = mouseX * 30;
+      const targetY = -mouseY * 20;
+      camera.position.x += (targetX - camera.position.x) * 0.02;
+      camera.position.y += (targetY - camera.position.y) * 0.02;
       camera.lookAt(0, 0, 0);
     }
 
-    if (callback) callback();
+    if (callback) callback(now / 1000);
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
-  loop();
+  loop(performance.now());
 }
 
 /* ── Accessors ─────────────────────────────────────────────────── */
 
-export function getScene()    { return scene; }
-export function getCamera()   { return camera; }
-export function getRenderer() { return renderer; }
+export function getScene()        { return scene; }
+export function getCamera()       { return camera; }
+export function getRenderer()     { return renderer; }
+export function getQualityLevel() { return _qualityLevel; }
+
+/** Get average FPS over the last 60 frames. */
+export function getAvgFps() {
+  if (_fpsHistory.length === 0) return 0;
+  return Math.round(_fpsHistory.reduce((a, b) => a + b, 0) / _fpsHistory.length);
+}
 
 /* ── Cleanup ───────────────────────────────────────────────────── */
 
@@ -91,6 +134,7 @@ export function disposeScene() {
   if (renderer)    renderer.dispose();
   document.removeEventListener('mousemove', _onMouseMove);
   window.removeEventListener('resize', _onResize);
+  if (_resizeTimer) clearTimeout(_resizeTimer);
 }
 
 /* ── Internal ──────────────────────────────────────────────────── */
@@ -100,9 +144,40 @@ function _onMouseMove(e) {
   mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
 }
 
+let _resizeTimer = null;
 function _onResize() {
-  if (!camera || !renderer) return;
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  // Debounce resize for performance
+  if (_resizeTimer) clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    if (!camera || !renderer) return;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }, 100);
+}
+
+/** Detect device quality level based on hardware. */
+function _detectQuality() {
+  // Check for mobile devices
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) return 'low';
+
+  // Check WebGL capabilities
+  try {
+    const gl = document.createElement('canvas').getContext('webgl');
+    if (gl) {
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        const gpuRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL).toLowerCase();
+        // Low-end GPU detection
+        if (gpuRenderer.includes('intel') && !gpuRenderer.includes('iris')) return 'medium';
+        if (gpuRenderer.includes('mali') || gpuRenderer.includes('adreno')) return 'low';
+      }
+    }
+  } catch { /* fallback to high */ }
+
+  // Check available logical processors
+  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) return 'medium';
+
+  return 'high';
 }

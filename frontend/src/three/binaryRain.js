@@ -1,16 +1,27 @@
 /**
- * StegX Binary Rain Effect — Rewritten from Scratch
- * Matrix-style falling binary digits with cyberpunk glow.
+ * StegX Binary Rain Effect — v2.0 Enhanced Rewrite
+ *
+ * Features:
+ *  - Intensity variation based on active operations
+ *  - Color shift effects (green ↔ cyan transition)
+ *  - Density adjustment based on performance mode
+ *  - Smoother digit flicker animation
+ *  - Trail fade effect for falling digits
  */
 import * as THREE from 'three';
 
 export class BinaryRain {
-  constructor(scene, columns = 40) {
+  constructor(scene, columns = 40, quality = 'high') {
     this.scene = scene;
-    this.columns = columns;
+    this.baseColumns = columns;
+    // Adjust density based on quality
+    this.columns = quality === 'low' ? Math.floor(columns * 0.3) :
+                   quality === 'medium' ? Math.floor(columns * 0.5) : columns;
     this.drops = [];
     this.mesh = null;
     this.count = 0;
+    this._intensity = 1.0;
+    this._colorShift = 0.0; // 0 = green, 1 = cyan
     this._init();
   }
 
@@ -54,7 +65,10 @@ export class BinaryRain {
 
       this.drops.push({
         speed: Math.random() * 1.5 + 0.5,
+        baseSpeed: Math.random() * 1.5 + 0.5,
         resetY: 300 + Math.random() * 200,
+        flickerRate: Math.random() * 0.005 + 0.001,
+        trailAlpha: Math.random() * 0.3 + 0.7,
       });
     }
 
@@ -67,6 +81,8 @@ export class BinaryRain {
         uTexture:    { value: texture },
         uTime:       { value: 0 },
         uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+        uIntensity:  { value: 1.0 },
+        uColorShift: { value: 0.0 },
       },
       vertexShader: `
         attribute float uvOffset;
@@ -89,6 +105,8 @@ export class BinaryRain {
       `,
       fragmentShader: `
         uniform sampler2D uTexture;
+        uniform float uIntensity;
+        uniform float uColorShift;
         varying float vUvOffset;
         varying float vOpacity;
         varying float vDist;
@@ -99,9 +117,13 @@ export class BinaryRain {
           vec4 texColor = texture2D(uTexture, uv);
 
           float fade  = smoothstep(800.0, 200.0, vDist);
-          float alpha = texColor.g * vOpacity * fade;
+          float alpha = texColor.g * vOpacity * fade * uIntensity;
 
-          vec3 color = mix(vec3(0.0, 0.9, 0.53), vec3(0.0, 0.9, 1.0), vDist / 600.0);
+          // Color shift: green (0) → cyan (1)
+          vec3 greenColor = vec3(0.0, 0.9, 0.53);
+          vec3 cyanColor  = vec3(0.0, 0.9, 1.0);
+          vec3 color = mix(greenColor, cyanColor, uColorShift + vDist / 1200.0);
+
           gl_FragColor = vec4(color, alpha * 0.6);
         }
       `,
@@ -114,25 +136,50 @@ export class BinaryRain {
     this.scene.add(this.mesh);
   }
 
+  /**
+   * Set rain intensity (0.0 to 2.0).
+   * Higher intensity = faster, brighter rain.
+   */
+  setIntensity(value) {
+    this._intensity = Math.max(0, Math.min(2, value));
+  }
+
+  /**
+   * Set color shift (0 = green, 1 = cyan).
+   */
+  setColorShift(value) {
+    this._colorShift = Math.max(0, Math.min(1, value));
+  }
+
   update(time) {
     if (!this.mesh) return;
 
     const pos  = this.mesh.geometry.attributes.position.array;
     const opac = this.mesh.geometry.attributes.opacity.array;
     const uvs  = this.mesh.geometry.attributes.uvOffset.array;
+
     this.mesh.material.uniforms.uTime.value = time;
+    this.mesh.material.uniforms.uIntensity.value = this._intensity;
+    this.mesh.material.uniforms.uColorShift.value = this._colorShift;
 
     for (let i = 0; i < this.count; i++) {
-      pos[i * 3 + 1] -= this.drops[i].speed;
+      // Speed influenced by intensity
+      const speed = this.drops[i].baseSpeed * this._intensity;
+      pos[i * 3 + 1] -= speed;
+
+      // Trail fade: particles get dimmer as they fall lower
+      const yNorm = (pos[i * 3 + 1] + 300) / 600; // 0 at bottom, 1 at top
+      opac[i] = this.drops[i].trailAlpha * Math.max(0.1, yNorm);
 
       // Reset when below screen
       if (pos[i * 3 + 1] < -300) {
         pos[i * 3 + 1] = this.drops[i].resetY;
         opac[i] = Math.random() * 0.5 + 0.1;
+        this.drops[i].trailAlpha = Math.random() * 0.3 + 0.7;
       }
 
-      // Random digit flicker
-      if (Math.random() < 0.003) {
+      // Random digit flicker (rate influenced by intensity)
+      if (Math.random() < this.drops[i].flickerRate * this._intensity) {
         uvs[i] = uvs[i] === 0 ? 0.5 : 0;
       }
     }
@@ -146,6 +193,9 @@ export class BinaryRain {
     if (this.mesh) {
       this.mesh.geometry.dispose();
       this.mesh.material.dispose();
+      if (this.mesh.material.uniforms.uTexture.value) {
+        this.mesh.material.uniforms.uTexture.value.dispose();
+      }
       this.scene.remove(this.mesh);
       this.mesh = null;
     }

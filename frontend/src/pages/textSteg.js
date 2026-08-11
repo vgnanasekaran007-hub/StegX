@@ -1,5 +1,12 @@
 /**
- * StegX Text Steganography Page — Rewritten from Scratch
+ * StegX Text Steganography Page — v2.0 Enhanced Rewrite
+ *
+ * Features:
+ *  - Character count and hidden capacity indicator
+ *  - Live preview of stego text
+ *  - Hidden data detection scanner
+ *  - Method comparison with examples
+ *  - Copy-to-clipboard for results
  */
 import { apiFetch } from '../api.js';
 import { toast } from '../components/toast.js';
@@ -24,11 +31,13 @@ export function renderTextSteg(container) {
           <label class="input-label">Cover Text</label>
           <textarea class="input-field" id="text-cover"
                     placeholder="Enter the visible cover text here. This text will appear normal to readers but contain hidden data…" rows="8"></textarea>
+          <div class="text-xs text-muted mt-4" id="cover-char-count">0 characters</div>
         </div>
         <div class="input-group">
           <label class="input-label">Secret Message</label>
           <textarea class="input-field" id="text-secret"
                     placeholder="Enter the secret message to hide…" rows="8"></textarea>
+          <div class="text-xs text-muted mt-4" id="secret-char-count">0 characters · 0 B</div>
         </div>
       </div>
       <div class="input-group mt-16">
@@ -45,7 +54,10 @@ export function renderTextSteg(container) {
       <div id="text-hide-result" class="hidden mt-16">
         <label class="input-label">Stego Text (copy this)</label>
         <textarea class="input-field" id="text-stego-output" rows="6" readonly style="color:var(--accent);"></textarea>
-        <button class="btn btn-accent btn-sm mt-8" id="copy-stego-btn">📋 Copy to Clipboard</button>
+        <div class="flex gap-8 mt-8">
+          <button class="btn btn-accent btn-sm" id="copy-stego-btn">📋 Copy to Clipboard</button>
+          <span class="text-xs text-muted" id="stego-stats" style="align-self:center;"></span>
+        </div>
       </div>
     </div>
 
@@ -55,6 +67,7 @@ export function renderTextSteg(container) {
         <label class="input-label">Stego Text</label>
         <textarea class="input-field" id="text-stego-input"
                   placeholder="Paste the stego text here…" rows="8"></textarea>
+        <div class="text-xs mt-4" id="detect-indicator" style="color:var(--text-muted);">Paste text to scan for hidden data</div>
       </div>
       <div class="input-group mt-16">
         <label class="input-label">Method</label>
@@ -71,6 +84,54 @@ export function renderTextSteg(container) {
       <div id="text-extract-result" class="hidden mt-16">
         <label class="input-label">Extracted Secret</label>
         <textarea class="input-field" id="text-extracted-output" rows="4" readonly style="color:var(--accent);"></textarea>
+        <button class="btn btn-accent btn-sm mt-8" id="copy-extracted-btn">📋 Copy</button>
+      </div>
+    </div>
+
+    <!-- Method Comparison -->
+    <div class="glass-panel stagger-item mt-24">
+      <h3 class="section-title">📋 Method Comparison</h3>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Method</th><th>Invisibility</th><th>Capacity</th><th>Robustness</th><th>How It Works</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--primary); font-weight:600;">Zero-Width</td>
+              <td><span class="tag tag-accent">Perfect</span></td>
+              <td>Medium</td>
+              <td>Low (copy may strip)</td>
+              <td class="text-xs text-muted">Uses invisible Unicode characters (U+200B, U+200C, U+200D)</td>
+            </tr>
+            <tr>
+              <td style="color:var(--secondary); font-weight:600;">Whitespace</td>
+              <td>High</td>
+              <td>Low</td>
+              <td>Low</td>
+              <td class="text-xs text-muted">Encodes data in trailing spaces and tabs</td>
+            </tr>
+            <tr>
+              <td style="color:var(--accent); font-weight:600;">Unicode Homoglyphs</td>
+              <td>High</td>
+              <td>Medium</td>
+              <td>Medium</td>
+              <td class="text-xs text-muted">Replaces characters with visually identical Unicode variants</td>
+            </tr>
+            <tr>
+              <td style="color:var(--warning); font-weight:600;">Char Encoding</td>
+              <td>Low</td>
+              <td>High</td>
+              <td>High</td>
+              <td class="text-xs text-muted">Uses full-width characters for encoding</td>
+            </tr>
+            <tr>
+              <td style="color:var(--danger); font-weight:600;">Synonym</td>
+              <td>Medium</td>
+              <td>Very Low</td>
+              <td>High</td>
+              <td class="text-xs text-muted">Replaces words with synonyms to encode bits</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   `;
@@ -84,6 +145,49 @@ export function renderTextSteg(container) {
       _toggle('text-hide-section', mode === 'hide');
       _toggle('text-extract-section', mode === 'extract');
     });
+  });
+
+  // ── Character counters ───────────────────────────────────────
+  _on('text-cover', 'input', () => {
+    const el = document.getElementById('cover-char-count');
+    const val = _val('text-cover');
+    if (el) el.textContent = `${val.length} characters`;
+  });
+
+  _on('text-secret', 'input', () => {
+    const el = document.getElementById('secret-char-count');
+    const val = _val('text-secret');
+    const bytes = new Blob([val]).size;
+    if (el) el.textContent = `${val.length} characters · ${bytes} B`;
+  });
+
+  // ── Hidden data detection scanner ────────────────────────────
+  _on('text-stego-input', 'input', () => {
+    const text = _val('text-stego-input');
+    const indicator = document.getElementById('detect-indicator');
+    if (!indicator || !text) {
+      if (indicator) indicator.textContent = 'Paste text to scan for hidden data';
+      return;
+    }
+
+    // Check for zero-width characters
+    const zwc = (text.match(/[\u200B\u200C\u200D\uFEFF]/g) || []).length;
+    if (zwc > 0) {
+      indicator.textContent = `🔍 Detected ${zwc} zero-width characters — likely contains hidden data!`;
+      indicator.style.color = 'var(--accent)';
+      return;
+    }
+
+    // Check for unusual whitespace
+    const ws = (text.match(/[\t ]{2,}$/gm) || []).length;
+    if (ws > 3) {
+      indicator.textContent = `🔍 Detected unusual whitespace patterns — may contain hidden data`;
+      indicator.style.color = 'var(--warning)';
+      return;
+    }
+
+    indicator.textContent = '✓ No obvious hidden data patterns detected';
+    indicator.style.color = 'var(--text-muted)';
   });
 
   // ── Hide ─────────────────────────────────────────────────────
@@ -103,6 +207,8 @@ export function renderTextSteg(container) {
         _show('text-hide-result');
         const output = document.getElementById('text-stego-output');
         if (output) output.value = data.stego_text;
+        const stats = document.getElementById('stego-stats');
+        if (stats) stats.textContent = `Output: ${(data.stego_text || '').length} chars`;
         toast.success('Hidden!', data.message);
       } else {
         throw new Error(data.detail || 'Failed');
@@ -132,13 +238,15 @@ export function renderTextSteg(container) {
     } catch (e) { toast.error('Error', e.message); }
   });
 
-  // ── Copy ─────────────────────────────────────────────────────
+  // ── Copy buttons ────────────────────────────────────────────
   _on('copy-stego-btn', 'click', () => {
     const text = _val('text-stego-output');
-    if (text) {
-      navigator.clipboard.writeText(text);
-      toast.info('Copied', 'Stego text copied to clipboard');
-    }
+    if (text) { navigator.clipboard.writeText(text); toast.info('Copied', 'Stego text copied to clipboard'); }
+  });
+
+  _on('copy-extracted-btn', 'click', () => {
+    const text = _val('text-extracted-output');
+    if (text) { navigator.clipboard.writeText(text); toast.info('Copied', 'Extracted text copied'); }
   });
 
   staggerIn('.stagger-item');
