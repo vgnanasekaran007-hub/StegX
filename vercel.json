@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm run build && mv dist ../dist",
+  "installCommand": "cd frontend && npm install",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
