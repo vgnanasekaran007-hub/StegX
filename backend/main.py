@@ -7,10 +7,10 @@ import sys
 import asyncio
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 # Ensure backend directory is in sys.path for Render / Uvicorn module resolution
 backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -66,6 +66,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# API key validation middleware
+API_KEY = os.environ.get("STEGX_API_KEY", "sP730SfdKK6k8VShIBk5B1NvK4FX8pd3ooAvFHeLMSsC1bKz")
+PUBLIC_PATHS = {
+    "/api/health", "/api/health/", "/health", "/health/",
+    "/docs", "/openapi.json", "/redoc"
+}
+
+@app.middleware("http")
+async def api_key_middleware(request: Request, call_next):
+    """Verify X-API-Key header on all /api/* and root mutating requests (except health check)."""
+    # Preflight OPTIONS requests must always pass without authentication
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
+    path = request.url.path
+    
+    # Skip auth for public paths and static assets
+    if (
+        path in PUBLIC_PATHS
+        or path.startswith("/uploads")
+        or path.startswith("/outputs")
+    ):
+        return await call_next(request)
+        
+    # If auth key is cleared/disabled, skip authentication
+    if not API_KEY:
+        return await call_next(request)
+        
+    # Check key on all backend endpoints
+    if path.startswith("/api") or path.startswith("/upload") or path.startswith("/history") or path.startswith("/encrypt"):
+        provided_key = request.headers.get("X-API-Key", "")
+        if provided_key != API_KEY:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid or missing API key. Send X-API-Key header."},
+            )
+            
+    return await call_next(request)
 
 # Mount static directories (guard existence for fresh Render deploys)
 _upload_dir = str(UPLOAD_DIR)
