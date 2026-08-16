@@ -116,9 +116,9 @@ export function animate(callback) {
 
 /* ── Accessors ─────────────────────────────────────────────────── */
 
-export function getScene()        { return scene; }
-export function getCamera()       { return camera; }
-export function getRenderer()     { return renderer; }
+export function getScene() { return scene; }
+export function getCamera() { return camera; }
+export function getRenderer() { return renderer; }
 export function getQualityLevel() { return _qualityLevel; }
 
 /** Get average FPS over the last 60 frames. */
@@ -131,7 +131,7 @@ export function getAvgFps() {
 
 export function disposeScene() {
   if (animationId) cancelAnimationFrame(animationId);
-  if (renderer)    renderer.dispose();
+  if (renderer) renderer.dispose();
   document.removeEventListener('mousemove', _onMouseMove);
   window.removeEventListener('resize', _onResize);
   if (_resizeTimer) clearTimeout(_resizeTimer);

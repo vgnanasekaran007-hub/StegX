@@ -77,8 +77,16 @@ def analyze_image_quality(original_path: str, stego_path: str) -> dict:
         raise ValueError(f"Cannot read stego image: {stego_path}")
 
     # Ensure same dimensions
-    if original.shape != stego.shape:
+    if original.shape[:2] != stego.shape[:2]:
         stego = cv2.resize(stego, (original.shape[1], original.shape[0]))
+
+    # Align channels
+    if len(original.shape) == 3 and len(stego.shape) == 3:
+        if original.shape[2] != stego.shape[2]:
+            if original.shape[2] == 4 and stego.shape[2] == 3:
+                original = original[:, :, :3]
+            elif original.shape[2] == 3 and stego.shape[2] == 4:
+                stego = stego[:, :, :3]
 
     return {
         "psnr": round(compute_psnr(original, stego), 4),

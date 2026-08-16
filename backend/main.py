@@ -91,7 +91,7 @@ async def health_check():
     return {
         "status": "online",
         "service": "StegX",
-        "version": "1.0.1",
+        "version": "1.0.2",
         "cors": "wildcard",
         "engines": {
             "image": ["lsb", "dct", "dwt", "hybrid"],
