@@ -3,7 +3,9 @@ services:
     name: stegx-backend
     env: python
     buildCommand: "pip install -r backend/requirements.txt"
-    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: STEGX_API_KEY
+        value: sP730SfdKK6k8VShIBk5B1NvK4FX8pd3ooAvFHeLMSsC1bKz
