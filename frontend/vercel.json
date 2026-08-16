@@ -2,6 +2,9 @@
   "version": 2,
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://stegx-03ut.onrender.com/api/:path*" },
+    { "source": "/upload", "destination": "https://stegx-03ut.onrender.com/api/upload" },
+    { "source": "/health", "destination": "https://stegx-03ut.onrender.com/api/health" },
     { "source": "/uploads/:path*", "destination": "https://stegx-03ut.onrender.com/uploads/:path*" },
     { "source": "/outputs/:path*", "destination": "https://stegx-03ut.onrender.com/outputs/:path*" },
     { "source": "/:path*", "destination": "/index.html" }

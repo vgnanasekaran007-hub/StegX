@@ -25,6 +25,7 @@ def get_file_path(file_id: str) -> str:
 
 
 @router.post("/upload")
+@router.post("/upload/")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a file and return its metadata."""
     # Read file content

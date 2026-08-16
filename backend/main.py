@@ -7,7 +7,7 @@ import sys
 import asyncio
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -84,8 +84,18 @@ app.include_router(analysis.router)
 app.include_router(history.router)
 
 
+@app.post("/upload")
+@app.post("/upload/")
+@app.post("/api/upload/")
+async def upload_file_root(file: UploadFile = File(...)):
+    """Root-level upload handler (with and without trailing slashes)."""
+    return await upload.upload_file(file)
+
+
 @app.get("/api/health")
+@app.get("/api/health/")
 @app.get("/health")
+@app.get("/health/")
 async def health_check():
     """API health check."""
     return {
